@@ -476,6 +476,17 @@ class Game {
     }
     
     handleInteraction() {
+        // 먼저 다른 플레이어와의 상호작용 확인
+        for (let [playerId, otherPlayer] of this.otherPlayers) {
+            if (this.isNearOtherPlayer(otherPlayer)) {
+                if (typeof startPlayerInteraction !== 'undefined') {
+                    startPlayerInteraction(otherPlayer);
+                }
+                return;
+            }
+        }
+        
+        // 그 다음 동물과의 상호작용 확인
         for (let animal of this.animals) {
             if (animal.isNearPlayer(this.player)) {
                 this.startDialog(animal);
@@ -1384,6 +1395,15 @@ class Game {
         }
     }
     
+    // 다른 플레이어와 가까운지 확인
+    isNearOtherPlayer(otherPlayer) {
+        const distance = Math.sqrt(
+            Math.pow(this.player.x - otherPlayer.x, 2) + 
+            Math.pow(this.player.y - otherPlayer.y, 2)
+        );
+        return distance < 60;
+    }
+    
     // 다른 플레이어 그리기
     drawOtherPlayer(ctx, otherPlayer) {
         // 플레이어 캐릭터
@@ -1402,6 +1422,13 @@ class Game {
         ctx.beginPath();
         ctx.arc(otherPlayer.x + 20, otherPlayer.y + 20, 25, 0, Math.PI * 2);
         ctx.stroke();
+        
+        // 상호작용 가능 표시
+        if (this.isNearOtherPlayer(otherPlayer)) {
+            ctx.fillStyle = '#2C3E50';
+            ctx.font = '14px Arial';
+            ctx.fillText('E를 눌러 대화하기', otherPlayer.x + 20, otherPlayer.y - 20);
+        }
     }
 }
 

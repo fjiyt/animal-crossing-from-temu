@@ -355,6 +355,184 @@
         .chat-message.other {
             background: #f0f0f0;
         }
+        
+        /* 플레이어 대화 및 선물 모달 */
+        .player-interaction-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .player-interaction-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+        
+        .player-interaction-container h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .player-chat-area {
+            height: 200px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 15px 0;
+            overflow-y: auto;
+            background: #f9f9f9;
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .player-chat-input-container {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .player-chat-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .interaction-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .interaction-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 100px;
+        }
+        
+        .interaction-btn:hover {
+            background: #45a049;
+        }
+        
+        .interaction-btn.gift {
+            background: #FF9800;
+        }
+        
+        .interaction-btn.gift:hover {
+            background: #F57C00;
+        }
+        
+        .interaction-btn.close {
+            background: #f44336;
+        }
+        
+        .interaction-btn.close:hover {
+            background: #d32f2f;
+        }
+        
+        /* 선물 선택 모달 */
+        .gift-selection-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2100;
+        }
+        
+        .gift-selection-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+        
+        .gift-items {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .gift-item {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+        
+        .gift-item:hover {
+            border-color: #4CAF50;
+            background: #e8f5e8;
+        }
+        
+        .gift-item.selected {
+            border-color: #4CAF50;
+            background: #e8f5e8;
+        }
+        
+        .gift-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f0f0f0;
+        }
+        
+        .gift-item-emoji {
+            font-size: 30px;
+            margin-bottom: 5px;
+        }
+        
+        .gift-item-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .gift-item-count {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .gift-amount-selector {
+            margin: 15px 0;
+        }
+        
+        .gift-amount-input {
+            width: 80px;
+            padding: 8px;
+            margin: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -552,6 +730,37 @@
             </div>
             <div id="chatResult"></div>
         </div>
+        
+        <!-- 플레이어 상호작용 모달 -->
+        <div id="playerInteractionModal" class="player-interaction-modal">
+            <div class="player-interaction-container">
+                <h3 id="interactionPlayerName">플레이어와 대화</h3>
+                <div class="player-chat-area" id="playerChatArea"></div>
+                <div class="player-chat-input-container">
+                    <input type="text" id="playerChatInput" class="player-chat-input" placeholder="메시지를 입력하세요..." maxlength="100">
+                    <button class="interaction-btn" onclick="sendPlayerMessage()">전송</button>
+                </div>
+                <div class="interaction-buttons">
+                    <button class="interaction-btn gift" onclick="openGiftSelection()">🎁 선물하기</button>
+                    <button class="interaction-btn close" onclick="closePlayerInteraction()">대화 종료</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 선물 선택 모달 -->
+        <div id="giftSelectionModal" class="gift-selection-modal">
+            <div class="gift-selection-container">
+                <h3 id="giftTargetPlayerName">선물 선택</h3>
+                <div class="gift-items" id="giftItems"></div>
+                <div class="gift-amount-selector">
+                    수량: <input type="number" id="giftAmountInput" class="gift-amount-input" min="1" max="10" value="1">
+                </div>
+                <div class="interaction-buttons">
+                    <button class="interaction-btn gift" onclick="confirmGift()">선물하기</button>
+                    <button class="interaction-btn close" onclick="closeGiftSelection()">취소</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -561,6 +770,8 @@
         // 글로벌 변수
         let currentPlayer = null;
         let socket = null;
+        let currentInteractionPlayer = null;
+        let selectedGiftItem = null;
         
         // 캐릭터 이모지 리스트
         const characterEmojis = ['🧚‍♀️', '🧚‍♂️', '👨‍🌾', '👩‍🌾', '🧙‍♀️', '🧙‍♂️', '👨‍🎨', '👩‍🎨', '🧝‍♀️', '🧝‍♂️', '👨‍💼', '👩‍💼'];
@@ -643,6 +854,21 @@
             socket.on('newChatMessage', (chatData) => {
                 addChatMessage(chatData);
             });
+            
+            // 플레이어 간 개인 메시지 받기
+            socket.on('playerMessage', (messageData) => {
+                addPlayerMessage(messageData);
+            });
+            
+            // 선물 받기
+            socket.on('giftReceived', (giftData) => {
+                handleGiftReceived(giftData);
+            });
+            
+            // 선물 확인 알림
+            socket.on('giftConfirmed', (confirmData) => {
+                alert(`${confirmData.recipientName}님이 ${confirmData.itemName} ${confirmData.amount}개를 받았습니다! 🎁`);
+            });
         }
         
         // 멀티플레이어 메시지 전송
@@ -694,6 +920,194 @@
         document.getElementById('multiChatInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMultiplayerMessage();
+            }
+        });
+        
+        // 플레이어와의 상호작용 시작
+        function startPlayerInteraction(otherPlayer) {
+            currentInteractionPlayer = otherPlayer;
+            document.getElementById('interactionPlayerName').textContent = `${otherPlayer.emoji} ${otherPlayer.username}님과 대화`;
+            document.getElementById('playerChatArea').innerHTML = '';
+            document.getElementById('playerChatInput').value = '';
+            document.getElementById('playerInteractionModal').style.display = 'flex';
+            document.getElementById('playerChatInput').focus();
+        }
+        
+        // 플레이어에게 메시지 전송
+        function sendPlayerMessage() {
+            const input = document.getElementById('playerChatInput');
+            const message = input.value.trim();
+            
+            if (message && socket && currentInteractionPlayer) {
+                socket.emit('playerMessage', {
+                    targetPlayerId: currentInteractionPlayer.id,
+                    message: message
+                });
+                
+                // 내 메시지를 채팅 영역에 추가
+                addPlayerMessage({
+                    senderName: currentPlayer.username,
+                    message: message,
+                    isOwn: true
+                });
+                
+                input.value = '';
+            }
+        }
+        
+        // 플레이어 메시지 채팅 영역에 추가
+        function addPlayerMessage(messageData) {
+            const chatArea = document.getElementById('playerChatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${messageData.isOwn ? 'own' : 'other'}`;
+            
+            const time = new Date().toLocaleTimeString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            messageDiv.innerHTML = `<strong>${messageData.senderName}:</strong> ${messageData.message} <small>(${time})</small>`;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        // 플레이어 상호작용 닫기
+        function closePlayerInteraction() {
+            currentInteractionPlayer = null;
+            document.getElementById('playerInteractionModal').style.display = 'none';
+        }
+        
+        // 선물 선택 모달 열기
+        function openGiftSelection() {
+            if (!currentInteractionPlayer) return;
+            
+            document.getElementById('giftTargetPlayerName').textContent = `${currentInteractionPlayer.username}님에게 선물`;
+            populateGiftItems();
+            document.getElementById('giftSelectionModal').style.display = 'flex';
+        }
+        
+        // 선물 아이템 목록 생성
+        function populateGiftItems() {
+            const giftItemsContainer = document.getElementById('giftItems');
+            giftItemsContainer.innerHTML = '';
+            
+            const giftableItems = [
+                { key: 'fish', name: '물고기', emoji: '🐟' },
+                { key: 'wood', name: '나무', emoji: '🪵' },
+                { key: 'carrot', name: '당근', emoji: '🥕' },
+                { key: 'apple', name: '사과', emoji: '🍎' },
+                { key: 'orange', name: '오렌지', emoji: '🍊' },
+                { key: 'coin', name: '코인', emoji: '🪙' }
+            ];
+            
+            giftableItems.forEach(item => {
+                const playerInventory = game ? game.player.inventory : {};
+                const count = playerInventory[item.key] || 0;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `gift-item ${count === 0 ? 'disabled' : ''}`;
+                itemDiv.onclick = () => selectGiftItem(item, count);
+                
+                itemDiv.innerHTML = `
+                    <div class="gift-item-emoji">${item.emoji}</div>
+                    <div class="gift-item-name">${item.name}</div>
+                    <div class="gift-item-count">보유: ${count}개</div>
+                `;
+                
+                giftItemsContainer.appendChild(itemDiv);
+            });
+        }
+        
+        // 선물 아이템 선택
+        function selectGiftItem(item, count) {
+            if (count === 0) return;
+            
+            // 이전 선택 해제
+            document.querySelectorAll('.gift-item').forEach(el => el.classList.remove('selected'));
+            
+            // 현재 아이템 선택
+            event.target.closest('.gift-item').classList.add('selected');
+            selectedGiftItem = item;
+            
+            // 최대 수량 설정
+            const amountInput = document.getElementById('giftAmountInput');
+            amountInput.max = count;
+            amountInput.value = Math.min(1, count);
+        }
+        
+        // 선물 확정
+        function confirmGift() {
+            if (!selectedGiftItem || !currentInteractionPlayer || !socket) {
+                alert('선물할 아이템을 선택해주세요!');
+                return;
+            }
+            
+            const amount = parseInt(document.getElementById('giftAmountInput').value);
+            const playerInventory = game ? game.player.inventory : {};
+            
+            if (!amount || amount < 1) {
+                alert('올바른 수량을 입력해주세요!');
+                return;
+            }
+            
+            if (playerInventory[selectedGiftItem.key] < amount) {
+                alert('보유한 아이템이 부족합니다!');
+                return;
+            }
+            
+            // 서버에 선물 전송
+            socket.emit('sendGift', {
+                targetPlayerId: currentInteractionPlayer.id,
+                itemKey: selectedGiftItem.key,
+                itemName: selectedGiftItem.name,
+                itemEmoji: selectedGiftItem.emoji,
+                amount: amount
+            });
+            
+            // 즉시 인벤토리에서 아이템 차감
+            if (game && game.player.inventory) {
+                game.player.inventory[selectedGiftItem.key] -= amount;
+                game.updateInventoryDisplay();
+            }
+            
+            alert(`${currentInteractionPlayer.username}님에게 ${selectedGiftItem.emoji} ${selectedGiftItem.name} ${amount}개를 선물했습니다! 🎁`);
+            
+            closeGiftSelection();
+            closePlayerInteraction();
+        }
+        
+        // 선물 받기 처리
+        function handleGiftReceived(giftData) {
+            const accept = confirm(`${giftData.senderName}님이 ${giftData.itemEmoji} ${giftData.itemName} ${giftData.amount}개를 선물하셨습니다!\n\n받으시겠습니까?`);
+            
+            if (accept && socket) {
+                // 인벤토리에 아이템 추가
+                if (game && game.player.inventory) {
+                    game.player.inventory[giftData.itemKey] += giftData.amount;
+                    game.updateInventoryDisplay();
+                }
+                
+                socket.emit('acceptGift', {
+                    giftId: giftData.giftId,
+                    senderId: giftData.senderId,
+                    itemName: giftData.itemName,
+                    amount: giftData.amount
+                });
+                
+                alert(`${giftData.itemEmoji} ${giftData.itemName} ${giftData.amount}개를 받았습니다! 감사합니다! 🎉`);
+            }
+        }
+        
+        // 선물 선택 모달 닫기
+        function closeGiftSelection() {
+            selectedGiftItem = null;
+            document.getElementById('giftSelectionModal').style.display = 'none';
+        }
+        
+        // Enter 키로 플레이어 메시지 전송
+        document.getElementById('playerChatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendPlayerMessage();
             }
         });
         

@@ -85,6 +85,63 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 플레이어 간 개인 메시지
+    socket.on('playerMessage', (messageData) => {
+        const sender = players.get(socket.id);
+        const recipient = players.get(messageData.targetPlayerId);
+        
+        if (sender && recipient) {
+            // 받는 사람에게만 메시지 전송
+            socket.to(messageData.targetPlayerId).emit('playerMessage', {
+                senderName: sender.username,
+                message: messageData.message,
+                isOwn: false
+            });
+            
+            console.log(`개인 메시지: ${sender.username} -> ${recipient.username}: ${messageData.message}`);
+        }
+    });
+
+    // 선물 전송
+    socket.on('sendGift', (giftData) => {
+        const sender = players.get(socket.id);
+        const recipient = players.get(giftData.targetPlayerId);
+        
+        if (sender && recipient) {
+            const giftId = Date.now() + Math.random();
+            
+            // 받는 사람에게 선물 알림
+            socket.to(giftData.targetPlayerId).emit('giftReceived', {
+                giftId: giftId,
+                senderId: socket.id,
+                senderName: sender.username,
+                itemKey: giftData.itemKey,
+                itemName: giftData.itemName,
+                itemEmoji: giftData.itemEmoji,
+                amount: giftData.amount
+            });
+            
+            console.log(`선물: ${sender.username} -> ${recipient.username}: ${giftData.itemName} ${giftData.amount}개`);
+        }
+    });
+
+    // 선물 수락
+    socket.on('acceptGift', (acceptData) => {
+        const recipient = players.get(socket.id);
+        const sender = players.get(acceptData.senderId);
+        
+        if (recipient && sender) {
+            // 보낸 사람에게 선물이 수락되었음을 알림
+            socket.to(acceptData.senderId).emit('giftConfirmed', {
+                recipientName: recipient.username,
+                itemName: acceptData.itemName || '아이템',
+                amount: acceptData.amount || 1
+            });
+            
+            console.log(`선물 수락: ${recipient.username}이 ${sender.username}의 선물을 받았습니다 (${acceptData.itemName} ${acceptData.amount}개)`);
+        }
+    });
+
     // 플레이어 연결 해제
     socket.on('disconnect', () => {
         const player = players.get(socket.id);
