@@ -615,9 +615,8 @@
             <h3>🐕 강아지의 수학 문제</h3>
             <p>문제를 풀고 나무를 받아보세요!</p>
             <div id="mathQuestion"></div>
-            <input type="number" id="mathInput" placeholder="답을 입력하세요">
+            <div id="mathOptions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;"></div>
             <div>
-                <button class="mathBtn" onclick="game.checkMathAnswer()">제출</button>
                 <button class="mathBtn" onclick="game.closeMathUI()">나중에</button>
             </div>
             <div id="mathResult"></div>
@@ -635,9 +634,8 @@
             <h3>🐰 토끼의 과학 퀴즈</h3>
             <p>문제를 풀고 당근을 받아보세요!</p>
             <div id="riddleQuestion"></div>
-            <input type="text" id="riddleInput" placeholder="답을 입력하세요">
+            <div id="riddleOptions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;"></div>
             <div>
-                <button class="mathBtn" onclick="game.checkRiddleAnswer()">제출</button>
                 <button class="mathBtn" onclick="game.closeRiddleUI()">나중에</button>
             </div>
             <div id="riddleResult"></div>
@@ -827,7 +825,7 @@
                 if (typeof game !== 'undefined') {
                     game.updateOtherPlayers(players.filter(p => p.id !== socket.id));
                 }
-                updateOnlineCount(players.length);
+                // 플레이어 수는 별도 이벤트로 받음
             });
             
             // 새 플레이어 입장
@@ -877,6 +875,11 @@
             // 선물 확인 알림
             socket.on('giftConfirmed', (confirmData) => {
                 alert(`${confirmData.recipientName}님이 ${confirmData.itemName} ${confirmData.amount}개를 받았습니다! 🎁`);
+            });
+            
+            // 온라인 플레이어 수 업데이트
+            socket.on('playerCountUpdate', (count) => {
+                updateOnlineCount(count);
             });
         }
         

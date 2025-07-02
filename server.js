@@ -47,6 +47,9 @@ io.on('connection', (socket) => {
         // 다른 플레이어들에게 새 플레이어 알림
         socket.broadcast.emit('newPlayer', player);
         
+        // 모든 플레이어에게 온라인 수 업데이트
+        io.emit('playerCountUpdate', players.size);
+        
         console.log(`플레이어 로그인: ${player.username} (${player.emoji})`);
     });
 
@@ -153,6 +156,9 @@ io.on('connection', (socket) => {
             
             // 다른 플레이어들에게 연결 해제 알림
             socket.broadcast.emit('playerDisconnected', socket.id);
+            
+            // 모든 플레이어에게 온라인 수 업데이트
+            io.emit('playerCountUpdate', players.size);
         }
     });
 });
@@ -184,11 +190,18 @@ setInterval(() => {
     const now = Date.now();
     const timeout = 5 * 60 * 1000; // 5분
     
+    let removedCount = 0;
     for (const [playerId, player] of players.entries()) {
         if (now - player.lastUpdate > timeout) {
             console.log(`비활성 플레이어 제거: ${player.username}`);
             players.delete(playerId);
             io.emit('playerDisconnected', playerId);
+            removedCount++;
         }
+    }
+    
+    // 플레이어가 제거되었으면 온라인 수 업데이트
+    if (removedCount > 0) {
+        io.emit('playerCountUpdate', players.size);
     }
 }, 5 * 60 * 1000);

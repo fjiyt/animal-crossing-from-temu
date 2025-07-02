@@ -594,34 +594,39 @@ class Game {
     startMathProblem() {
         this.currentDialog = null;
         this.isMathActive = true;
-        const a = Math.floor(Math.random() * 10) + 1;
-        const b = Math.floor(Math.random() * 10) + 1;
-        const operations = ['+', '-', '*'];
-        const op = operations[Math.floor(Math.random() * operations.length)];
         
-        let answer;
-        switch(op) {
-            case '+': answer = a + b; break;
-            case '-': answer = a - b; break;
-            case '*': answer = a * b; break;
-        }
+        const mathQuestions = [
+            { question: "15 + 27 = ?", options: ["42", "41", "43", "40"], answer: "42" },
+            { question: "8 × 7 = ?", options: ["54", "56", "58", "52"], answer: "56" },
+            { question: "64 ÷ 8 = ?", options: ["8", "7", "9", "6"], answer: "8" },
+            { question: "25 - 18 = ?", options: ["7", "6", "8", "9"], answer: "7" },
+            { question: "12 × 5 = ?", options: ["60", "50", "70", "55"], answer: "60" },
+            { question: "100 - 37 = ?", options: ["63", "62", "64", "61"], answer: "63" }
+        ];
         
-        this.mathAnswer = answer;
-        document.getElementById('mathQuestion').textContent = `${a} ${op} ${b} = ?`;
-        document.getElementById('mathInput').value = '';
+        this.mathData = mathQuestions[Math.floor(Math.random() * mathQuestions.length)];
+        
+        document.getElementById('mathQuestion').textContent = this.mathData.question;
+        
+        const optionsDiv = document.getElementById('mathOptions');
+        optionsDiv.innerHTML = '';
+        
+        this.mathData.options.forEach(option => {
+            const btn = document.createElement('button');
+            btn.className = 'mathBtn';
+            btn.textContent = option;
+            btn.onclick = () => this.checkMathAnswer(option);
+            optionsDiv.appendChild(btn);
+        });
+        
         document.getElementById('mathResult').textContent = '';
         document.getElementById('mathUI').style.display = 'block';
-        
-        setTimeout(() => {
-            document.getElementById('mathInput').focus();
-        }, 100);
     }
     
-    checkMathAnswer() {
-        const userAnswer = parseInt(document.getElementById('mathInput').value);
+    checkMathAnswer(selectedOption) {
         const resultDiv = document.getElementById('mathResult');
         
-        if (userAnswer === this.mathAnswer) {
+        if (selectedOption === this.mathData.answer) {
             resultDiv.textContent = '정답입니다! 나무 3개를 받았습니다! 🪵';
             resultDiv.className = 'correct';
             this.player.inventory.wood += 3;
@@ -631,7 +636,7 @@ class Game {
                 this.closeMathUI();
             }, 2000);
         } else {
-            resultDiv.textContent = `틀렸습니다. 정답은 ${this.mathAnswer}입니다!`;
+            resultDiv.textContent = `틀렸습니다. 정답은 "${this.mathData.answer}"입니다!`;
             resultDiv.className = 'incorrect';
         }
     }
@@ -699,30 +704,37 @@ class Game {
         this.isRiddleActive = true;
         
         const scienceQuiz = [
-            { question: "물의 화학식은 무엇인가요?", answer: "H2O" },
-            { question: "태양계에서 가장 큰 행성은?", answer: "목성" },
-            { question: "식물이 햇빛을 이용해 양분을 만드는 과정은?", answer: "광합성" },
-            { question: "소리의 속도는 초속 몇 미터인가요?", answer: "340" },
-            { question: "지구의 대기 중 가장 많은 기체는?", answer: "질소" }
+            { question: "물의 화학식은 무엇인가요?", options: ["H2O", "CO2", "NaCl", "O2"], answer: "H2O" },
+            { question: "태양계에서 가장 큰 행성은?", options: ["목성", "토성", "지구", "화성"], answer: "목성" },
+            { question: "식물이 햇빛을 이용해 양분을 만드는 과정은?", options: ["광합성", "호흡", "증발", "소화"], answer: "광합성" },
+            { question: "지구의 대기 중 가장 많은 기체는?", options: ["질소", "산소", "이산화탄소", "아르곤"], answer: "질소" },
+            { question: "빛의 속도는 초속 약 몇 km인가요?", options: ["300,000", "150,000", "450,000", "200,000"], answer: "300,000" },
+            { question: "인체에서 가장 큰 장기는?", options: ["피부", "간", "폐", "뇌"], answer: "피부" }
         ];
         
         this.riddleData = scienceQuiz[Math.floor(Math.random() * scienceQuiz.length)];
         
         document.getElementById('riddleQuestion').textContent = this.riddleData.question;
-        document.getElementById('riddleInput').value = '';
+        
+        const optionsDiv = document.getElementById('riddleOptions');
+        optionsDiv.innerHTML = '';
+        
+        this.riddleData.options.forEach(option => {
+            const btn = document.createElement('button');
+            btn.className = 'mathBtn';
+            btn.textContent = option;
+            btn.onclick = () => this.checkRiddleAnswer(option);
+            optionsDiv.appendChild(btn);
+        });
+        
         document.getElementById('riddleResult').textContent = '';
         document.getElementById('riddleUI').style.display = 'block';
-        
-        setTimeout(() => {
-            document.getElementById('riddleInput').focus();
-        }, 100);
     }
     
-    checkRiddleAnswer() {
-        const userAnswer = document.getElementById('riddleInput').value.trim();
+    checkRiddleAnswer(selectedOption) {
         const resultDiv = document.getElementById('riddleResult');
         
-        if (userAnswer === this.riddleData.answer) {
+        if (selectedOption === this.riddleData.answer) {
             resultDiv.textContent = '정답입니다! 당근 3개를 받았습니다! 🥕';
             resultDiv.className = 'correct';
             this.player.inventory.carrot += 3;
