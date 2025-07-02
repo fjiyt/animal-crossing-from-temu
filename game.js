@@ -60,10 +60,10 @@ class Player {
         }
     }
     
-    draw(ctx) {
+    draw(ctx, emoji = '🧚‍♀️') {
         ctx.font = '32px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🧚‍♀️', this.x + this.width/2, this.y + this.height - 5);
+        ctx.fillText(emoji, this.x + this.width/2, this.y + this.height - 5);
     }
 }
 
@@ -282,6 +282,12 @@ class Tree {
 class Game {
     constructor() {
         this.player = new Player(100, 400);
+        
+        // 멀티플레이어 관련 변수
+        this.otherPlayers = new Map();
+        this.currentPlayer = null;
+        this.socket = null;
+        this.lastPositionUpdate = 0;
         this.animals = [
             new Animal(300, 300, '강아지', '🐕', [
                 '멍멍! 반가워!',
@@ -360,6 +366,7 @@ class Game {
         this.chatHistory = [];
         
         this.setupEventListeners();
+        this.initMultiplayerListeners();
     }
     
     setupEventListeners() {
@@ -401,11 +408,71 @@ class Game {
             if (e.key.toLowerCase() === 'c') {
                 this.chopNearestTree();
             }
+            if (e.key.toLowerCase() === 't') {
+                if (typeof toggleMultiplayerChat !== 'undefined') {
+                    toggleMultiplayerChat();
+                }
+            }
         });
         
         document.addEventListener('keyup', (e) => {
             this.keys[e.key.toLowerCase()] = false;
         });
+    }
+    
+    initMultiplayerListeners() {
+        // T키로 채팅 토글은 이미 setupEventListeners에서 처리
+    }
+    
+    initMultiplayer() {
+        // 멀티플레이어 초기화
+        console.log('멀티플레이어 모드 활성화:', this.currentPlayer);
+    }
+    
+    // 다른 플레이어들 업데이트
+    updateOtherPlayers(players) {
+        this.otherPlayers.clear();
+        players.forEach(player => {
+            this.otherPlayers.set(player.id, player);
+        });
+    }
+    
+    // 새 플레이어 추가
+    addOtherPlayer(player) {
+        this.otherPlayers.set(player.id, player);
+        console.log('새 플레이어 입장:', player.username);
+    }
+    
+    // 다른 플레이어 위치 업데이트
+    updateOtherPlayerPosition(moveData) {
+        const player = this.otherPlayers.get(moveData.id);
+        if (player) {
+            player.x = moveData.x;
+            player.y = moveData.y;
+        }
+    }
+    
+    // 플레이어 제거
+    removeOtherPlayer(playerId) {
+        const player = this.otherPlayers.get(playerId);
+        if (player) {
+            console.log('플레이어 나감:', player.username);
+            this.otherPlayers.delete(playerId);
+        }
+    }
+    
+    // 내 위치를 서버에 전송
+    sendMyPosition() {
+        if (this.socket && this.currentPlayer) {
+            const now = Date.now();
+            if (now - this.lastPositionUpdate > 100) { // 100ms마다만 전송
+                this.socket.emit('playerMove', {
+                    x: this.player.x,
+                    y: this.player.y
+                });
+                this.lastPositionUpdate = now;
+            }
+        }
     }
     
     handleInteraction() {
@@ -1216,7 +1283,15 @@ class Game {
         const canMove = !this.currentDialog && !this.isMathActive && !this.isTriviaActive && !this.isRiddleActive && !this.isShopActive && !this.isTradeActive && !this.isBankActive && !this.isChatActive;
         
         if (canMove && canvas.width > 0 && canvas.height > 0) {
+            const oldX = this.player.x;
+            const oldY = this.player.y;
+            
             this.player.update(this.keys, canvas.width, canvas.height, this.fishingSpots);
+            
+            // 위치가 변경되면 서버에 전송
+            if (this.currentPlayer && (oldX !== this.player.x || oldY !== this.player.y)) {
+                this.sendMyPosition();
+            }
         }
         
         this.animals.forEach(animal => {
@@ -1244,7 +1319,15 @@ class Game {
         this.drawBanks(ctx);
         this.trees.forEach(tree => tree.draw(ctx));
         
-        this.player.draw(ctx);
+        // 다른 플레이어들 그리기
+        this.otherPlayers.forEach(otherPlayer => {
+            this.drawOtherPlayer(ctx, otherPlayer);
+        });
+        
+        // 내 플레이어 그리기
+        const myEmoji = this.currentPlayer ? this.currentPlayer.emoji : '🧚‍♀️';
+        this.player.draw(ctx, myEmoji);
+        
         this.animals.forEach(animal => animal.draw(ctx));
         
         // 상호작용 안내
@@ -1299,6 +1382,26 @@ class Game {
                 break;
             }
         }
+    }
+    
+    // 다른 플레이어 그리기
+    drawOtherPlayer(ctx, otherPlayer) {
+        // 플레이어 캐릭터
+        ctx.font = '32px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(otherPlayer.emoji, otherPlayer.x + 20, otherPlayer.y + 35);
+        
+        // 플레이어 이름
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#2C3E50';
+        ctx.fillText(otherPlayer.username, otherPlayer.x + 20, otherPlayer.y - 5);
+        
+        // 테두리 (선택사항)
+        ctx.strokeStyle = '#3498DB';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(otherPlayer.x + 20, otherPlayer.y + 20, 25, 0, Math.PI * 2);
+        ctx.stroke();
     }
 }
 
