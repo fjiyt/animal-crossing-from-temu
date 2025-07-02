@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>동물의 숲 게임</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #87CEEB, #90EE90);
+            font-family: 'Comic Sans MS', cursive;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #gameCanvas {
+            border: none;
+            background: linear-gradient(to bottom, #87CEEB 0%, #90EE90 40%, #32CD32 100%);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #dialogBox {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid #8B4513;
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+        
+        #dialogText {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        #dialogOptions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .dialogBtn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .dialogBtn:hover {
+            background: #45a049;
+        }
+        
+        #inventory {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #8B4513;
+        }
+        
+        .fishingUI {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            display: none;
+            text-align: center;
+        }
+        
+        #fishingBar {
+            width: 200px;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            margin: 10px auto;
+            position: relative;
+        }
+        
+        #fishingProgress {
+            height: 100%;
+            background: #4CAF50;
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        .buildingUI {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            display: none;
+            text-align: center;
+            border: 3px solid #8B4513;
+        }
+        
+        .buildBtn {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .buildBtn:hover {
+            background: #E5A455;
+        }
+        
+        .mathUI {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            display: none;
+            text-align: center;
+            border: 3px solid #FF6347;
+            min-width: 300px;
+        }
+        
+        #mathQuestion {
+            font-size: 24px;
+            color: #333;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        #mathInput {
+            padding: 10px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            width: 100px;
+            text-align: center;
+            margin: 10px;
+        }
+        
+        .mathBtn {
+            background: #FF6347;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .mathBtn:hover {
+            background: #FF4500;
+        }
+        
+        #mathResult {
+            margin-top: 15px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .correct {
+            color: #4CAF50;
+        }
+        
+        .incorrect {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <div>🧚‍♀️ 요정의 동물친구들</div>
+            <div>WASD로 이동, E로 상호작용, F로 수확, C로 나무베기</div>
+        </div>
+        
+        <div id="inventory">
+            <h3>가방</h3>
+            <div id="inventoryItems">
+                <div>🐟 물고기: <span id="fishCount">0</span></div>
+                <div>🪵 나무: <span id="woodCount">0</span></div>
+                <div>🥕 당근: <span id="carrotCount">0</span></div>
+                <div>🍎 사과: <span id="appleCount">0</span></div>
+                <div>🍊 오렌지: <span id="orangeCount">0</span></div>
+                <div>🪙 코인: <span id="coinCount">0</span></div>
+                <div>🏦 은행: <span id="bankBalance">0</span></div>
+            </div>
+        </div>
+        
+        <div id="dialogBox">
+            <div id="dialogText"></div>
+            <div id="dialogOptions"></div>
+        </div>
+        
+        <div id="fishingUI" class="fishingUI">
+            <h3>낚시 중...</h3>
+            <div>스페이스바를 눌러 물고기를 잡으세요!</div>
+            <div id="fishingBar">
+                <div id="fishingProgress"></div>
+            </div>
+            <button onclick="game.stopFishing()">그만하기</button>
+        </div>
+        
+        <div id="buildingUI" class="buildingUI">
+            <h3>집 건설</h3>
+            <p>무엇을 건설하시겠습니까?</p>
+            <button class="buildBtn" onclick="game.buildHouse('small')">작은 집 (나무 5개)</button>
+            <button class="buildBtn" onclick="game.buildHouse('big')">큰 집 (나무 10개)</button>
+            <button class="buildBtn" onclick="game.closeBuildingUI()">취소</button>
+        </div>
+        
+        <div id="mathUI" class="mathUI">
+            <h3>🐕 강아지의 수학 문제</h3>
+            <p>문제를 풀고 나무를 받아보세요!</p>
+            <div id="mathQuestion"></div>
+            <input type="number" id="mathInput" placeholder="답을 입력하세요">
+            <div>
+                <button class="mathBtn" onclick="game.checkMathAnswer()">제출</button>
+                <button class="mathBtn" onclick="game.closeMathUI()">나중에</button>
+            </div>
+            <div id="mathResult"></div>
+        </div>
+        
+        <div id="triviaUI" class="mathUI">
+            <h3>🐱 고양이의 상식 문제</h3>
+            <p>문제를 풀고 생선을 받아보세요!</p>
+            <div id="triviaQuestion"></div>
+            <div id="triviaOptions"></div>
+            <div id="triviaResult"></div>
+        </div>
+        
+        <div id="riddleUI" class="mathUI">
+            <h3>🐰 토끼의 과학 퀴즈</h3>
+            <p>문제를 풀고 당근을 받아보세요!</p>
+            <div id="riddleQuestion"></div>
+            <input type="text" id="riddleInput" placeholder="답을 입력하세요">
+            <div>
+                <button class="mathBtn" onclick="game.checkRiddleAnswer()">제출</button>
+                <button class="mathBtn" onclick="game.closeRiddleUI()">나중에</button>
+            </div>
+            <div id="riddleResult"></div>
+        </div>
+        
+        <div id="shopUI" class="mathUI">
+            <h3>🏪 상점</h3>
+            <p>무엇을 하시겠습니까?</p>
+            <div id="shopContent">
+                <div style="display: flex; gap: 20px; justify-content: center;">
+                    <div style="text-align: center;">
+                        <h4>판매하기</h4>
+                        <button class="mathBtn" onclick="game.sellItem('fish')">🐟 물고기 팔기 (5코인)</button>
+                        <button class="mathBtn" onclick="game.sellItem('carrot')">🥕 당근 팔기 (3코인)</button>
+                        <button class="mathBtn" onclick="game.sellItem('apple')">🍎 사과 팔기 (4코인)</button>
+                        <button class="mathBtn" onclick="game.sellItem('orange')">🍊 오렌지 팔기 (4코인)</button>
+                    </div>
+                    <div style="text-align: center;">
+                        <h4>구매하기</h4>
+                        <button class="mathBtn" onclick="game.buyItem('wood')">🪵 나무 사기 (8코인)</button>
+                        <button class="mathBtn" onclick="game.buyItem('fish')">🐟 물고기 사기 (6코인)</button>
+                    </div>
+                </div>
+                <button class="mathBtn" onclick="game.closeShopUI()" style="margin-top: 15px;">나가기</button>
+            </div>
+            <div id="shopResult"></div>
+        </div>
+        
+        <div id="tradeUI" class="mathUI">
+            <h3>🦊 여우의 물물교환</h3>
+            <p>내가 가진 것과 네가 가진 것을 바꿔보자!</p>
+            <div id="tradeContent">
+                <div style="display: flex; gap: 20px; justify-content: center;">
+                    <div style="text-align: center;">
+                        <h4>여우가 원하는 것</h4>
+                        <div id="foxWants"></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <h4>여우가 주는 것</h4>
+                        <div id="foxOffers"></div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="mathBtn" onclick="game.acceptTrade()">교환하기</button>
+                    <button class="mathBtn" onclick="game.closeTradeUI()">나중에</button>
+                </div>
+            </div>
+            <div id="tradeResult"></div>
+        </div>
+        
+        <div id="bankUI" class="mathUI">
+            <h3>🏦 요정 은행</h3>
+            <p>돈을 저축하고 이자를 받아보세요!</p>
+            <div id="bankInfo">
+                <div style="display: flex; gap: 20px; justify-content: center; margin: 20px 0;">
+                    <div>현재 잔고: <span id="currentBalance">0</span> 코인</div>
+                    <div>이자율: 5% (게임시간 1분마다)</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; justify-content: center;">
+                <div style="text-align: center;">
+                    <h4>입금하기</h4>
+                    <input type="number" id="depositAmount" placeholder="입금할 금액" min="1">
+                    <button class="mathBtn" onclick="game.deposit()">입금</button>
+                </div>
+                <div style="text-align: center;">
+                    <h4>출금하기</h4>
+                    <input type="number" id="withdrawAmount" placeholder="출금할 금액" min="1">
+                    <button class="mathBtn" onclick="game.withdraw()">출금</button>
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="mathBtn" onclick="game.closeBankUI()">나가기</button>
+            </div>
+            <div id="bankResult"></div>
+        </div>
+        
+        <div id="chatUI" class="mathUI" style="max-width: 600px; height: 500px;">
+            <h3>🧙‍♂️ 현자와의 대화</h3>
+            <p>궁금한 것을 무엇이든 물어보세요!</p>
+            <div id="chatHistory" style="height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 10px 0; background: #f9f9f9; text-align: left;">
+                <div style="color: #666; font-style: italic;">현자: 안녕! 무엇이 궁금하니?</div>
+            </div>
+            <div style="display: flex; gap: 10px; margin: 10px 0;">
+                <input type="text" id="chatInput" placeholder="현자에게 질문하기..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                <button class="mathBtn" onclick="game.sendChatMessage()" id="chatSendBtn">전송</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="mathBtn" onclick="game.closeChatUI()">대화 종료</button>
+            </div>
+            <div id="chatResult"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
