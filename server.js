@@ -93,9 +93,11 @@ io.on('connection', (socket) => {
         if (sender && recipient) {
             // 받는 사람에게만 메시지 전송
             socket.to(messageData.targetPlayerId).emit('playerMessage', {
+                senderId: socket.id,
                 senderName: sender.username,
                 message: messageData.message,
-                isOwn: false
+                isOwn: false,
+                timestamp: Date.now()
             });
             
             console.log(`개인 메시지: ${sender.username} -> ${recipient.username}: ${messageData.message}`);

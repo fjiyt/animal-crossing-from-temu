@@ -772,6 +772,7 @@
         let socket = null;
         let currentInteractionPlayer = null;
         let selectedGiftItem = null;
+        let playerChatHistories = new Map(); // 플레이어별 대화 내역 저장
         
         // 캐릭터 이모지 리스트
         const characterEmojis = ['🧚‍♀️', '🧚‍♂️', '👨‍🌾', '👩‍🌾', '🧙‍♀️', '🧙‍♂️', '👨‍🎨', '👩‍🎨', '🧝‍♀️', '🧝‍♂️', '👨‍💼', '👩‍💼'];
@@ -858,6 +859,14 @@
             // 플레이어 간 개인 메시지 받기
             socket.on('playerMessage', (messageData) => {
                 addPlayerMessage(messageData);
+                
+                // 대화창이 열려있지 않거나 다른 플레이어와 대화 중일 때 알림
+                const isCurrentChat = currentInteractionPlayer && currentInteractionPlayer.id === messageData.senderId;
+                const isChatOpen = document.getElementById('playerInteractionModal').style.display === 'flex';
+                
+                if (!isChatOpen || !isCurrentChat) {
+                    showPlayerMessageNotification(messageData);
+                }
             });
             
             // 선물 받기
@@ -927,7 +936,10 @@
         function startPlayerInteraction(otherPlayer) {
             currentInteractionPlayer = otherPlayer;
             document.getElementById('interactionPlayerName').textContent = `${otherPlayer.emoji} ${otherPlayer.username}님과 대화`;
-            document.getElementById('playerChatArea').innerHTML = '';
+            
+            // 기존 대화 내역 불러오기
+            loadPlayerChatHistory(otherPlayer.id);
+            
             document.getElementById('playerChatInput').value = '';
             document.getElementById('playerInteractionModal').style.display = 'flex';
             document.getElementById('playerChatInput').focus();
@@ -955,20 +967,59 @@
             }
         }
         
+        // 플레이어 대화 내역 불러오기
+        function loadPlayerChatHistory(playerId) {
+            const chatArea = document.getElementById('playerChatArea');
+            chatArea.innerHTML = '';
+            
+            const history = playerChatHistories.get(playerId) || [];
+            history.forEach(messageData => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${messageData.isOwn ? 'own' : 'other'}`;
+                messageDiv.innerHTML = `<strong>${messageData.senderName}:</strong> ${messageData.message} <small>(${messageData.time})</small>`;
+                chatArea.appendChild(messageDiv);
+            });
+            
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
         // 플레이어 메시지 채팅 영역에 추가
         function addPlayerMessage(messageData) {
-            const chatArea = document.getElementById('playerChatArea');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${messageData.isOwn ? 'own' : 'other'}`;
-            
             const time = new Date().toLocaleTimeString('ko-KR', {
                 hour: '2-digit',
                 minute: '2-digit'
             });
             
-            messageDiv.innerHTML = `<strong>${messageData.senderName}:</strong> ${messageData.message} <small>(${time})</small>`;
-            chatArea.appendChild(messageDiv);
-            chatArea.scrollTop = chatArea.scrollHeight;
+            // 메시지 데이터에 시간 추가
+            const messageWithTime = {
+                ...messageData,
+                time: time
+            };
+            
+            // 대화 내역에 저장
+            const playerId = messageData.isOwn ? currentInteractionPlayer?.id : messageData.senderId;
+            if (playerId) {
+                if (!playerChatHistories.has(playerId)) {
+                    playerChatHistories.set(playerId, []);
+                }
+                playerChatHistories.get(playerId).push(messageWithTime);
+                
+                // 최대 50개 메시지만 저장
+                const history = playerChatHistories.get(playerId);
+                if (history.length > 50) {
+                    history.shift();
+                }
+            }
+            
+            // 현재 대화창이 해당 플레이어와의 대화인 경우에만 표시
+            if (currentInteractionPlayer && (playerId === currentInteractionPlayer.id || messageData.isOwn)) {
+                const chatArea = document.getElementById('playerChatArea');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${messageData.isOwn ? 'own' : 'other'}`;
+                messageDiv.innerHTML = `<strong>${messageData.senderName}:</strong> ${messageData.message} <small>(${time})</small>`;
+                chatArea.appendChild(messageDiv);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
         }
         
         // 플레이어 상호작용 닫기
@@ -1103,6 +1154,97 @@
             selectedGiftItem = null;
             document.getElementById('giftSelectionModal').style.display = 'none';
         }
+        
+        // 메시지 알림 표시
+        function showPlayerMessageNotification(messageData) {
+            // 오디오 알림
+            playNotificationSound();
+            
+            // 시각적 알림
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 9999;
+                font-size: 14px;
+                max-width: 300px;
+                cursor: pointer;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            notification.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 5px;">💬 ${messageData.senderName}님의 메시지</div>
+                <div>${messageData.message.length > 50 ? messageData.message.substring(0, 50) + '...' : messageData.message}</div>
+                <div style="font-size: 12px; color: #ddd; margin-top: 5px;">클릭하여 대화하기</div>
+            `;
+            
+            // 클릭하면 해당 플레이어와 대화 시작
+            notification.onclick = () => {
+                const otherPlayer = game.otherPlayers.get(messageData.senderId);
+                if (otherPlayer) {
+                    startPlayerInteraction(otherPlayer);
+                }
+                document.body.removeChild(notification);
+            };
+            
+            document.body.appendChild(notification);
+            
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    notification.style.animation = 'slideOut 0.3s ease-in';
+                    setTimeout(() => {
+                        if (document.body.contains(notification)) {
+                            document.body.removeChild(notification);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+        
+        // 알림 소리 재생
+        function playNotificationSound() {
+            try {
+                // Web Audio API를 사용한 간단한 알림음
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (error) {
+                console.log('오디오 재생 실패:', error);
+            }
+        }
+        
+        // CSS 애니메이션 추가
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
         
         // Enter 키로 플레이어 메시지 전송
         document.getElementById('playerChatInput').addEventListener('keypress', (e) => {
